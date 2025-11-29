@@ -95,8 +95,8 @@ class HashTable:
 # ---------------------------------------------------------
 class DocumentSystem:
     """
-    Clase principal que gestiona la generacion de datos, almacenamiento
-    y recuperacion.
+    Clase principal que gestiona la generacion de datos, almacenamiento,
+    recuperacion y ordenamiento.
     """
     def __init__(self):
         # Usamos un numero primo o cercano para el tamaño para reducir colisiones (Teoria).
@@ -129,10 +129,38 @@ class DocumentSystem:
             
         print("Datos generados y almacenados en la Tabla Hash.")
 
+    def _quicksort(self, docs_list):
+        """
+        Implementacion simple de Randomized Quicksort para ordenar resultados.
+        Referencia: Logica y Representacion III - Clase 03.
+        Ordena alfabeticamente por titulo.
+        """
+        if len(docs_list) <= 1:
+            return docs_list
+        
+        # Seleccion aleatoria del pivote (Randomized approach)
+        pivot = random.choice(docs_list)
+        
+        left = []
+        middle = []
+        right = []
+        
+        for doc in docs_list:
+            # Comparamos por titulo
+            if doc.title < pivot.title:
+                left.append(doc)
+            elif doc.title == pivot.title:
+                middle.append(doc)
+            else:
+                right.append(doc)
+                
+        # Llamada recursiva (Divide and Conquer)
+        return self._quicksort(left) + middle + self._quicksort(right)
+
     def search_by_keyword(self, keyword):
         """
         Busca documentos que contengan una palabra clave en el titulo.
-        Nota: Al no ser una busqueda por ID, debemos recorrer los documentos.
+        Retorna los resultados ORDENADOS usando Quicksort.
         """
         keyword = keyword.lower()
         results = []
@@ -144,7 +172,9 @@ class DocumentSystem:
         
         # Guardamos la interaccion
         self.user_search_history.append(keyword)
-        return results
+        
+        # Aqui aplicamos el Sorting requerido en el titulo del proyecto
+        return self._quicksort(results)
 
     def retrieve_document(self, doc_id):
         """
@@ -161,9 +191,6 @@ class DocumentSystem:
         """
         Algoritmo Aleatorizado (Randomized Algorithm).
         Sugerencias basadas en muestreo aleatorio (Sampling).
-        
-        Teoria: Usa aleatoriedad para ofrecer una solucion rapida y util sin
-        tener que analizar toda la base de datos exhaustivamente.
         """
         all_docs = self.storage.get_all_documents()
         
@@ -171,21 +198,18 @@ class DocumentSystem:
             return []
             
         # Si el usuario tiene historial, intentamos filtrar un subconjunto relevante
-        # y luego aplicamos aleatoriedad sobre ese subconjunto.
         relevant_pool = []
         if self.user_search_history:
             last_search = self.user_search_history[-1]
-            # Filtro simple: documentos que coinciden con la ultima busqueda
             relevant_pool = [d for d in all_docs if last_search in d.tags]
         
-        # Si no hay pool relevante o es muy pequeño, usamos todo el conjunto (Randomness puro)
+        # Si no hay pool relevante, usamos todo el conjunto
         if len(relevant_pool) < num_suggestions:
             pool_to_sample = all_docs
         else:
             pool_to_sample = relevant_pool
 
         # Seleccion aleatoria (Sampling)
-        # Random.sample es util para evitar duplicados en la seleccion
         suggestions = random.sample(pool_to_sample, min(num_suggestions, len(pool_to_sample)))
         
         return suggestions
@@ -197,33 +221,27 @@ if __name__ == "__main__":
     # 1. Instanciar el sistema
     system = DocumentSystem()
 
-    # 2. Generar la data (Simulacion de Big Data)
+    # 2. Generar la data
     system.generate_dummy_data(2000)
 
-    # 3. Simular recuperacion por ID (Uso de Hashing)
-    # Obtenemos un ID de muestra para probar
+    # 3. Simular recuperacion por ID (Hashing)
     all_docs = system.storage.get_all_documents()
     sample_id = all_docs[0].doc_id
     
     print(f"\n--- Prueba 1: Recuperacion eficiente por Hash (ID: {sample_id}) ---")
     retrieved_doc = system.retrieve_document(sample_id)
     print(f"Documento recuperado: {retrieved_doc}")
-    print(f"Contenido: {retrieved_doc.content}")
 
-    # 4. Simular busqueda por palabra clave
-    print("\n--- Prueba 2: Busqueda por palabra clave 'data' ---")
+    # 4. Simular busqueda por palabra clave con ORDENAMIENTO (Quicksort)
+    print("\n--- Prueba 2: Busqueda ordenada por palabra clave 'data' ---")
     search_results = system.search_by_keyword("data")
     print(f"Encontrados {len(search_results)} documentos.")
-    if search_results:
-        print(f"Ejemplo: {search_results[0]}")
+    print("Primeros 3 resultados ordenados alfabeticamente:")
+    for doc in search_results[:3]:
+        print(f" - {doc.title}")
 
-    # 5. Recomendaciones Aleatorizadas (Randomized Algorithms)
+    # 5. Recomendaciones Aleatorizadas
     print("\n--- Prueba 3: Recomendaciones personalizadas (Aleatorias) ---")
-    # El sistema vera que buscamos "data" y tratara de sugerir algo relacionado o aleatorio
     suggestions = system.randomized_recommendation(3)
     for i, doc in enumerate(suggestions, 1):
-        print(f"Sugerencia {i}: {doc.title} (Tags: {doc.tags})")
-
-    # 6. Mostrar interaccion rastreada
-    print(f"\n--- Prueba 4: Rastreo de interacciones ---")
-    print(f"Veces que el documento {sample_id} fue accedido: {retrieved_doc.access_count}")
+        print(f"Sugerencia {i}: {doc.title}")
