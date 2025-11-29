@@ -1,0 +1,27 @@
+# Entornos y dependencias locales
+.venv/
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Cachés de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Archivos de entorno y configuración local
+.env
+.env.*
+*.env
+.DS_Store
+.idea/
+.vscode/
+
+# Datos generados
+data.json
+documents_data.json
