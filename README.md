@@ -4,7 +4,6 @@ Guía rápida para clonar el proyecto, crear el entorno virtual y ejecutar los e
 
 ## Requisitos
 - Python 3.9+ (se usa solo librería estándar).
-- Dependencias opcionales: `faker` si deseas ejecutar `w1/data_generation.py`.
 
 ## Clonar y preparar el entorno
 1. Clona el repo y entra a la carpeta:
@@ -25,9 +24,9 @@ Guía rápida para clonar el proyecto, crear el entorno virtual y ejecutar los e
      ```powershell
      .\.venv\Scripts\Activate.ps1
      ```
-4. Instala dependencias opcionales solo si usarás `w1/data_generation.py`:
+4. (Opcional) Actualiza `pip` dentro del entorno virtual:
    ```bash
-   pip install faker
+   pip install --upgrade pip
    ```
 
 ## Ejecución de ejemplos
@@ -41,11 +40,6 @@ Guía rápida para clonar el proyecto, crear el entorno virtual y ejecutar los e
   python3 w1_v2/main.py
   ```
 
-- `w1/data_generation.py` (opcional, requiere `faker`): genera `w1/documents_data.json` con 2000 documentos ficticios.
-  ```bash
-  python3 w1/data_generation.py
-  ```
-
 - `w2/main.py`: simulación de stream con Bloom Filter, sampling, conteo exacto, momentos de frecuencia y DGIM.
   ```bash
   python3 w2/main.py
@@ -56,6 +50,11 @@ Guía rápida para clonar el proyecto, crear el entorno virtual y ejecutar los e
   python3 w3/main.py
   ```
 
+- `w4/main.py`: demostración de MapReduce paralelo usando multiprocessing (conteo, promedio, join y análisis de costos/performance).
+  ```bash
+  python3 w4/main.py
+  ```
+
 ## Notas
-- Los archivos de datos (`data.json`, `documents_data.json`) están listados en `.gitignore` para evitar subirlos al repo.
+- El archivo de datos generado (`data.json`) está listado en `.gitignore` para evitar subirlo al repo.
 - Mantén activado el entorno virtual cuando ejecutes los scripts. Si cierras la terminal, vuelve a activarlo antes de correrlos. 
