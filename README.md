@@ -1,6 +1,6 @@
 # Workshop Final Lógica 3
 
-Guía rápida para clonar el proyecto, crear el entorno virtual y ejecutar los ejemplos de manejo y recomendación de documentos.
+Guía rápida para clonar el proyecto, crear el entorno virtual y ejecutar los ejemplos de manejo, recomendación y análisis de documentos.
 
 ## Requisitos
 - Python 3.9+ (se usa solo librería estándar).
@@ -31,22 +31,30 @@ Guía rápida para clonar el proyecto, crear el entorno virtual y ejecutar los e
    ```
 
 ## Ejecución de ejemplos
-- Gestor integrado con generación de datos automática: 
+- `w1/main.py`: gestor integrado (hash + recomendaciones + generación de datos). Genera `data.json` con 2000 documentos y muestra búsqueda/sugerencias.
   ```bash
   python3 w1/main.py
   ```
-  Genera `data.json` con 2000 documentos de muestra y muestra búsqueda/sugerencias.
 
-- Versión conceptual con tabla hash y recomendaciones aleatorias:
+- `w1_v2/main.py`: versión conceptual que muestra tabla hash, búsqueda y recomendaciones aleatorias.
   ```bash
   python3 w1_v2/main.py
   ```
 
-- Generación de datos con Faker (opcional):
+- `w1/data_generation.py` (opcional, requiere `faker`): genera `w1/documents_data.json` con 2000 documentos ficticios.
   ```bash
   python3 w1/data_generation.py
   ```
-  Crea `w1/documents_data.json` con 2000 documentos ficticios.
+
+- `w2/main.py`: simulación de stream con Bloom Filter, sampling, conteo exacto, momentos de frecuencia y DGIM.
+  ```bash
+  python3 w2/main.py
+  ```
+
+- `w3/main.py`: generación avanzada de documentos con matrices de Markov, PageRank, tiempos de mezcla y prueba de 2-SAT.
+  ```bash
+  python3 w3/main.py
+  ```
 
 ## Notas
 - Los archivos de datos (`data.json`, `documents_data.json`) están listados en `.gitignore` para evitar subirlos al repo.
