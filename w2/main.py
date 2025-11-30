@@ -1,5 +1,13 @@
+"""
+Unidad 2: Procesamiento de streams con Bloom Filter, Sampling, Conteo exacto,
+Momento 1 (F1) y DGIM sobre eventos de documentos.
+"""
+
 import random
 import math
+
+LINE = "=" * 70
+SUB = "-" * 70
 
 class SistemaProcesamiento:
     def __init__(self):
@@ -41,11 +49,11 @@ class SistemaProcesamiento:
 
         # ---------------------------------------------------------
         # 5. DGIM ALGORITHM
-        # Teoría: Ventana deslizante, bukets potencias de 2.
+        # Teoría: Ventana deslizante, buckets potencias de 2.
         # ---------------------------------------------------------
         self.current_timestamp = 0
         self.window_size = 32
-        # Lista de bukets. Cada buket es: [tamaño, tiempo_final]
+        # Lista de buckets. Cada bucket es: [tamaño, tiempo_final]
         self.dgim_buckets = []
         # Ruta preferida para usuarios muestreados
         self.routing_choice = {}
@@ -61,15 +69,20 @@ class SistemaProcesamiento:
         freq_bucket = search_freq // 10 if search_freq is not None else None
         signature = f"{document_type.lower()}_{freq_bucket}" if freq_bucket is not None else document_type.lower()
 
-        # Simulamos Hash 1: Suma de valores ASCII % tamaño
+        # Hash 1: Suma de ASCII ponderada
         val_ascii = sum(ord(c) for c in signature)
         pos1 = (val_ascii * 7) % self.bloom_size
-        
-        # Simulamos Hash 2: Otra operación matemática
+
+        # Hash 2: Posiciones con desplazamiento
         pos2 = (val_ascii * 13 + 5) % self.bloom_size
 
-        # Verificamos recencia: bits en 1 y visto en la ventana reciente
-        seen = self.bloom_array[pos1] == 1 and self.bloom_array[pos2] == 1
+        # Hash 3: hash nativo de Python
+        pos3 = (hash(signature) * 11 + 17) % self.bloom_size
+
+        positions = (pos1, pos2, pos3)
+
+        # Verificamos recencia: todos los bits en 1 y visto en ventana reciente
+        seen = all(self.bloom_array[p] == 1 for p in positions)
         recent = signature in self.bloom_last_seen and (step - self.bloom_last_seen[signature]) <= self.recency_window
 
         if seen and recent:
@@ -78,8 +91,8 @@ class SistemaProcesamiento:
             print(f"[Bloom] El tipo '{document_type}' no estaba reciente. Marcando bits {pos1} y {pos2}.")
         
         # Marcamos los bits a 1 (Inserción) y guardamos recencia
-        self.bloom_array[pos1] = 1
-        self.bloom_array[pos2] = 1
+        for pos in positions:
+            self.bloom_array[pos] = 1
         self.bloom_last_seen[signature] = step
 
     # ==============================================================================
@@ -156,16 +169,16 @@ class SistemaProcesamiento:
     # ==============================================================================
     def procesar_dgim(self, bit):
         """
-        Recibe un bit (1 o 0). Si es 1, crea un buket y fusiona si es necesario.
+        Recibe un bit (1 o 0). Si es 1, crea un bucket y fusiona si es necesario.
         """
         self.current_timestamp += 1
         
-        # Paso A: Eliminar bukets viejos (fuera de la ventana)
+        # Paso A: Eliminar buckets viejos (fuera de la ventana)
         # Si el tiempo actual es 100 y ventana es 20, borramos todo lo anterior a 80
         while len(self.dgim_buckets) > 0:
-            ultimo_bucket = self.dgim_buckets[-1] # El más viejo está al final
+            ultimo_bucket = self.dgim_buckets[-1]  # El más viejo está al final
             if ultimo_bucket[1] <= self.current_timestamp - self.window_size:
-                self.dgim_buckets.pop() # Borrar
+                self.dgim_buckets.pop()  # Borrar
             else:
                 break
 
@@ -173,16 +186,16 @@ class SistemaProcesamiento:
         if bit == 0:
             return
 
-        # Paso C: Si bit es 1, crear nuevo buket de tamaño 1
+        # Paso C: Si bit es 1, crear nuevo bucket de tamaño 1
         # Insertamos al inicio (índice 0 es lo más reciente)
         new_bucket = [1, self.current_timestamp] 
         self.dgim_buckets.insert(0, new_bucket)
 
         # Paso D: Fusión (Merge) - La parte clave de la teoría
-        # "Si hay 3 bukets del mismo tamaño, fusionar los 2 más viejos"
+        # "Si hay 3 buckets del mismo tamaño, fusionar los 2 más viejos"
         idx = 0
         while idx < len(self.dgim_buckets) - 2:
-            # Revisamos 3 bukets consecutivos: actual, siguiente, subsiguiente
+            # Revisamos 3 buckets consecutivos: actual, siguiente, subsiguiente
             b1 = self.dgim_buckets[idx]
             b2 = self.dgim_buckets[idx+1]
             b3 = self.dgim_buckets[idx+2]
@@ -203,7 +216,7 @@ class SistemaProcesamiento:
             else:
                 idx += 1
         
-        print(f"[DGIM] Estado Cubetas (Tamaño, TiempoFinal): {self.dgim_buckets}")
+        print(f"[DGIM] Estado Buckets (Tamaño, TiempoFinal): {self.dgim_buckets}")
 
 # ==============================================================================
 # SIMULACIÓN DEL FLUJO (STREAM)
@@ -218,7 +231,9 @@ tipos_docs = ["report", "memo", "presentation", "email"]
 print("--- INICIANDO STREAM DE DATOS ---\n")
 
 for i in range(10): # Simularemos 10 llegadas de datos
-    print(f"\n--- T (Tiempo): {i+1} ---")
+    print("\n" + SUB)
+    print(f"T (Tiempo): {i+1}")
+    print(SUB)
     
     # Generar JSON simulado
     doc_type = random.choice(tipos_docs)
@@ -256,7 +271,9 @@ for i in range(10): # Simularemos 10 llegadas de datos
     sistema.procesar_dgim(1)
 
 print("\n--- FIN DE LA SIMULACIÓN ---")
-print("Contenidos Finales de Muestras (Sampling):")
-print(sistema.sample.keys()) # Ver qué usuarios sobrevivieron en la muestra
-print("Conteo exacto de documentos por usuario:", sistema.user_doc_count)
-print("Rutas asignadas por muestreo:", sistema.routing_choice)
+print(LINE)
+print("RESUMEN FINAL")
+print(LINE)
+print(f"Muestra (usuarios): {list(sistema.sample.keys())}")
+print(f"Conteo exacto de documentos por usuario: {sistema.user_doc_count}")
+print(f"Rutas asignadas por muestreo: {sistema.routing_choice}")

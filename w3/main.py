@@ -1,8 +1,54 @@
+"""
+Unidad 3: Modelado de flujo de documentos con cadenas de Markov, PageRank,
+random walks y demo de 2-SAT aleatorizado.
+"""
+
 import json
 import random
 import math
 import datetime
 import uuid
+
+LINE = "=" * 60
+SUBLINE = "-" * 60
+
+# --- PARTE EXTRA: 2-SAT ALEATORIZADO (DEMO SENCILLA) ---
+
+
+def evaluate_clause(clause, assignment):
+    """Evalúa una cláusula (lit1 or lit2) bajo una asignación booleana."""
+    lit1, lit2 = clause
+    val1 = assignment[abs(lit1) - 1] if lit1 > 0 else not assignment[abs(lit1) - 1]
+    val2 = assignment[abs(lit2) - 1] if lit2 > 0 else not assignment[abs(lit2) - 1]
+    return val1 or val2
+
+
+def is_satisfied(clauses, assignment):
+    """Retorna True si todas las cláusulas están satisfechas."""
+    return all(evaluate_clause(c, assignment) for c in clauses)
+
+
+def random_2sat(clauses, max_iter=None):
+    """
+    Algoritmo aleatorizado tipo Papadimitriou para 2-SAT.
+    Parte de una asignación aleatoria y voltea variables al azar en cláusulas no satisfechas.
+    """
+    n_vars = max(abs(lit) for clause in clauses for lit in clause)
+    if max_iter is None:
+        max_iter = 2 * n_vars * n_vars
+
+    assignment = [random.choice([True, False]) for _ in range(n_vars)]
+
+    for _ in range(max_iter):
+        if is_satisfied(clauses, assignment):
+            return assignment
+        unsat = [c for c in clauses if not evaluate_clause(c, assignment)]
+        clause = random.choice(unsat)
+        var_idx = abs(random.choice(clause)) - 1
+        assignment[var_idx] = not assignment[var_idx]
+
+    return None
+
 
 # --- PARTE 1: MATEMÁTICAS MARKOVIANAS ---
 
@@ -298,6 +344,7 @@ if __name__ == "__main__":
     # Parametrizado a 2000 como pide el template (cambiar a 5 para pruebas rápidas)
     NUM_DOCS = 2000 
     
+    print("\n" + LINE)
     print(f"Generando {NUM_DOCS} documentos...")
     data = generator.generate_dataset(NUM_DOCS)
     
@@ -309,5 +356,19 @@ if __name__ == "__main__":
     print(f"¡Éxito! Archivo guardado como '{filename}'.")
     
     # Imprimir solo el primero como muestra en la terminal
-    print("\n--- Muestra del Primer Documento ---")
+    print("\n" + LINE)
+    print("Muestra del Primer Documento")
+    print(LINE)
     print(json.dumps(data[0], indent=2))
+
+    # Demostración extra: 2-SAT aleatorizado con cláusulas de ejemplo
+    print("\n" + LINE)
+    print("Demo 2-SAT (aleatorizado)")
+    print(LINE)
+    sample_clauses = [[1, 2], [-1, 3], [-2, -3]]
+    solution = random_2sat(sample_clauses, max_iter=None)
+    print(f"Cláusulas: {sample_clauses}")
+    if solution:
+        print(f"Asignación encontrada: {solution}")
+    else:
+        print("No se encontró asignación en las iteraciones permitidas.")

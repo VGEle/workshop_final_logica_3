@@ -1,6 +1,19 @@
 # Workshop Final Lógica 3
 
-Guía rápida para clonar el proyecto, crear el entorno virtual y ejecutar los ejemplos de manejo, recomendación y análisis de documentos.
+## Contexto
+- **Curso:** Lógica y Representación
+- **Docente:** William Cornejo
+- **Institución:** Universidad de Antioquia
+- **Integrantes:** Carolina Gómez Osorno, Elena Vargas Grisales
+- **Problema base:** Exercise 12 – Automated Document Sorting and Retrieval System. Objetivo: gestionar grandes volúmenes de documentos con hashing, streaming, modelos de Markov, MapReduce y KNN para organización, recuperación y recomendaciones.
+
+## Descripción del proyecto
+Implementamos cinco unidades, cada una enfocada en un tema central de la materia:
+- **U1 (w1):** Hashing + índice invertido + algoritmos aleatorizados para búsquedas rápidas y recomendaciones.
+- **U2 (w2):** Procesamiento de streams: Bloom, Sampling, conteo exacto, momento F1 y DGIM.
+- **U3 (w3):** Cadenas de Markov para flujo de documentos, PageRank, random walks y demo 2-SAT.
+- **U4 (w4):** MapReduce paralelo: conteo, promedio, join, costos y medición simple de performance.
+- **U5 (w5):** Vecinos cercanos (KNN) para similitud, categoría, patrón de usuario, efectividad y agrupación.
 
 ## Requisitos
 - Python 3.9+ (se usa solo librería estándar).
@@ -58,3 +71,4 @@ Guía rápida para clonar el proyecto, crear el entorno virtual y ejecutar los e
 ## Notas
 - El archivo de datos generado (`data.json`) está listado en `.gitignore` para evitar subirlo al repo.
 - Mantén activado el entorno virtual cuando ejecutes los scripts. Si cierras la terminal, vuelve a activarlo antes de correrlos. 
+- Roles sugeridos para la exposición: cada integrante puede cubrir una o dos unidades; incluyan breve demo y conexión teoría→código. 

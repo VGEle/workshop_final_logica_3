@@ -1,3 +1,8 @@
+"""
+Unidad 5: Búsqueda de vecinos cercanos (KNN) para similitud de documentos,
+categorías, patrones de usuario, efectividad y agrupación.
+"""
+
 import json
 import math
 import random
@@ -293,19 +298,30 @@ def main():
     # Seleccionamos el primer documento como nuestro "Query" o "Target"
     target_document = my_docs[0]
     
-    # 2. Ejecutar Algoritmo 1
+    line = "=" * 60
+    print("\n" + line)
+    print("Algoritmo 1: Similitud Básica (KNN)")
+    print(line)
     algorithm_1_basic_similarity(target_document, my_docs, k=3)
     
-    # 3. Ejecutar Algoritmo 2
+    print("\n" + line)
+    print("Algoritmo 2: Emparejamiento por Categoría")
+    print(line)
     algorithm_2_category_matching(target_document, my_docs, k=3)
     
-    # 4. Ejecutar Algoritmo 3
+    print("\n" + line)
+    print("Algoritmo 3: Patrón de Usuario")
+    print(line)
     algorithm_3_user_pattern(target_document, my_docs, k=3)
     
-    # 5. Ejecutar Algoritmo 4
+    print("\n" + line)
+    print("Algoritmo 4: Prueba de Efectividad")
+    print(line)
     algorithm_4_effectiveness_test(target_document, my_docs, k=5)
     
-    # 6. Ejecutar Algoritmo 5
+    print("\n" + line)
+    print("Algoritmo 5: Agrupación Organizacional")
+    print(line)
     algorithm_5_organization_grouping(my_docs, k=4)
 
 if __name__ == "__main__":

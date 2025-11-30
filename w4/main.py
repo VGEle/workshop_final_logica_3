@@ -1,3 +1,8 @@
+"""
+Unidad 4: MapReduce paralelo con conteo, promedio, join, costos y medición
+simple de performance.
+"""
+
 import json
 import random
 import time
@@ -188,27 +193,38 @@ def algoritmo_5_performance(docs_full):
 # ==========================================
 if __name__ == "__main__":
     # IMPORTANTE: En Windows, multiprocessing necesita estar protegido por este if
-    
+    line = "=" * 60
     docs, users = cargar_o_generar_documentos(count=1000)
     
-    print("\n" + "="*50)
+    print("\n" + line)
     print("INICIANDO DEMOSTRACIÓN DE PARALELISMO REAL")
-    print("="*50)
+    print(line)
 
     # --- DEMO ALGORITMO 1 (PARALELO) ---
-    print("\n1) Ejecutando Algoritmo 1 (Conteo) en PARALELO...")
+    print("\n1) Algoritmo 1: Conteo por tipo (paralelo)")
     res1 = motor_map_reduce_paralelo(docs, map_1_contador, reduce_1_contador)
     print(f"   Resultado parcial: PDF -> {res1.get('PDF', 0)}")
 
+    # --- DEMO ALGORITMO 2 (PROMEDIO) ---
+    print("\n2) Algoritmo 2: Promedio de tamaño por departamento")
+    res2 = motor_map_reduce_paralelo(docs, map_2_promedio, reduce_2_promedio)
+    print("   Promedios (MB):")
+    for dept, avg in res2.items():
+        print(f"   - {dept}: {avg} MB")
+
     # --- DEMO ALGORITMO 3 (JOIN PARALELO) ---
-    print("\n3) Ejecutando Algoritmo 3 (Join) en PARALELO...")
+    print("\n3) Algoritmo 3: Join documento-usuario (paralelo)")
     datos_join = algoritmo_3_join_setup(docs, users)
-    # Usamos la misma función map_join definida arriba
     res3 = motor_map_reduce_paralelo(datos_join, map_join, reduce_join)
     print("   Ejemplo de reporte generado:")
     print(f"   {list(res3.values())[0]}")
 
+    print("\n4) Algoritmo 4: Costos de almacenamiento")
     algoritmo_4_costos(docs)
+
+    print("\n5) Algoritmo 5: Análisis de performance (conteo paralelo)")
     algoritmo_5_performance(docs)
     
-    print("\nDemostración completada usando MÚLTIPLES NÚCLEOS.")
+    print("\n" + line)
+    print("Demostración completada usando múltiples núcleos.")
+    print(line)

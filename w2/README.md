@@ -1,25 +1,33 @@
 # Unidad 2 – Stream Processing (Bloom, Sampling, DGIM)
 
+## Contexto del problema
+Exercise 12: Automated Document Sorting and Retrieval System (stream). Objetivo: procesar eventos de búsqueda/recuperación en línea, detectar contenido visto recientemente, muestrear usuarios para optimizar rutas, contar accesos y estimar actividad en ventana temporal.
+
+## Teoría clave
+- Bloom Filter en streams: múltiples hashes + ventana de recencia.
+- Behavior Sampling: hash consistente + umbral dinámico para seleccionar usuarios.
+- Distinct Counting exacto: sets y contadores por usuario.
+- Frequency Moments (F1): suma de frecuencias = longitud del stream.
+- DGIM: buckets potencias de 2 en ventana deslizante.
+
 ## Qué hace y qué requisitos cumple
-- **Bloom Filter con recencia**: dos hashes sobre firma de tipo+bucket de frecuencia; marca bits y detecta si se vio en los últimos pasos (teoría de filtros de Bloom en streams).
-- **Behavior-based Sampling**: hash consistente y umbral dinámico para aceptar usuarios; asigna ruta prioritaria/normal, optimizando la ruta de recuperación de forma simple.
-- **Distinct Counting exacto**: set de tipos por usuario + contador exacto de documentos accedidos (no aproximado).
-- **Frequency Moment F1**: suma total de `searchFrequency` del stream (momento 1 en análisis de streams).
-- **DGIM**: ventana de 32, cubetas potencias de 2, fusión de 3 cubetas iguales; cuenta eventos (bit=1 por llegada) en la ventana deslizante.
+- **Bloom con recencia**: tres hashes sobre firma tipo+bucket de frecuencia; detecta si se vio en los últimos pasos.
+- **Sampling**: hash/umbral para aceptar usuarios y asignar ruta prioritaria o normal; reduce umbral si la muestra crece.
+- **Distinct Counting**: tipos únicos y contador exacto de documentos por usuario.
+- **F1**: acumula `searchFrequency` de todos los eventos.
+- **DGIM**: ventana 32, buckets con fusión de 3 iguales; bit=1 por llegada para estimar búsquedas recientes.
 
 ## Archivos clave
-- `w2/main.py`: simulación completa de 10 eventos de stream.
+- `w2/main.py`: simulación de 10 eventos de stream.
 
 ## Cómo correr
 ```bash
 python3 w2/main.py
 ```
 
-## Notas rápidas
-- El Bloom usa dos hashes simples sobre la firma del tipo.
-- El muestreo reduce el umbral si la muestra crece más que el límite.
-- DGIM usa ventana de 32 pasos; se imprime el estado de cubetas tras cada 1.
-
 ## Orden de ejecución (stream)
-- Archivo: `w2/main.py`.
-- Secuencia por cada evento (bucle en línea 220): Bloom (`procesar_bloom`) → Sampling (`procesar_muestreo`) → Conteo exacto (`procesar_conteo_exacto`) → Momento 1 (`procesar_momento_uno`) → DGIM (`procesar_dgim`). Se repite 10 veces.
+- Secuencia por evento (bucle en línea ~220): Bloom → Sampling → Conteo exacto → F1 → DGIM. Se repite 10 veces.
+
+## Sugerencias para la exposición
+- Qué ver en consola: detección de recencia en Bloom, aceptación/rechazo en sampling, F1 acumulado, buckets de DGIM, resumen final de muestra/rutas.
+- Simplificaciones: firma por tipo+frecuencia (no hash de contenido completo), bit=1 para cada evento en DGIM, ventana fija de 32, 10 eventos de demo (ajustable).

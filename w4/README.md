@@ -1,5 +1,8 @@
 # Unidad 4 – MapReduce (Conteo, Promedio, Join, Costos, Performance)
 
+## Contexto del problema
+Exercise 12: Automated Document Sorting and Retrieval System (MapReduce). Objetivo: procesar grandes volúmenes de documentos de forma distribuida para contar, agregar, unir metadatos, estimar costos y medir performance con paralelismo.
+
 ## Qué hace y qué requisitos cumple
 - **Algoritmo 1 (contar tipos)**: map (documentType, 1), reduce suma → tipos más comunes.
 - **Algoritmo 2 (promedio por departamento)**: map (department, fileSizeMB), reduce promedio → tamaños por área.
@@ -24,3 +27,7 @@ python3 w4/main.py
 ## Orden de ejecución (main)
 - Archivo: `w4/main.py`, bloque principal en línea 189.
 - Secuencia: carga/genera docs → Algoritmo 1 (conteo) → Algoritmo 3 (join) → Algoritmo 4 (costos) → Algoritmo 5 (performance en subset y completo). Algoritmo 2 está definido pero no se llama en el flujo; puedes invocarlo si lo necesitas.
+
+## Sugerencias para la exposición
+- Qué ver en consola: conteo por tipo, promedios por departamento (si se invoca), ejemplo de reporte join, cálculo de costos, tiempos en subset vs completo.
+- Simplificaciones: datos simulados o cargados desde U3, speedup/performance ilustrativo (no benchmark exhaustivo), paralelismo en fase MAP con multiprocessing.
