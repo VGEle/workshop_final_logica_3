@@ -1,282 +1,327 @@
 """
-Implementación sencilla de un gestor de documentos que usa una tabla hash para
-almacenar, generar, buscar y sugerir resultados de forma rápida.
+Unidad 1: Gestor de documentos con tabla hash, índice invertido y
+recomendaciones aleatorizadas.
 """
 
-import json
 import random
+import string
+import datetime
+import time
 from collections import defaultdict
-from datetime import datetime, timedelta
-from typing import Dict, Iterable, List, Optional
 
 
-class DocumentRecommender:
-    """
-    Gestiona documentos en una tabla hash, permite generarlos y ofrece búsquedas
-    y sugerencias personalizadas basadas en interacciones previas.
-    """
+# ---------------------------------------------------------
+# CLASE 1: Documento
+# ---------------------------------------------------------
+class Document:
+    """Representa un documento individual con sus metadatos."""
 
-    def __init__(self, documents: Optional[Iterable[Dict]] = None) -> None:
-        """
-        Inicializa la estructura con una lista opcional de documentos.
-        Cada documento debe incluir _id, title, content, tags y lastAccessed.
-        """
-        self.documents: Dict[str, Dict] = {}
-        self.inverted_index: Dict[str, set] = defaultdict(set)
-        self.user_history: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    def __init__(self, doc_id, title, content, tags):
+        self.doc_id = doc_id
+        self.title = title
+        self.content = content
+        self.tags = tags
+        self.last_accessed = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S +0000")
+        self.access_count = 0
+        self.relevance_score = 0
 
-        if documents:
-            for doc in documents:
-                self.add_document(doc)
+    def __repr__(self):
+        return f"[ID: {self.doc_id}] {self.title} (Score: {self.relevance_score})"
 
-    def add_document(self, document: Dict) -> None:
-        """
-        Agrega un documento a la tabla hash y lo indexa para búsquedas rápidas.
-        """
-        doc_id = document["_id"]
-        self.documents[doc_id] = document
-        self._index_document(document)
 
-    def get_document(self, doc_id: str) -> Optional[Dict]:
-        """
-        Recupera un documento en tiempo constante; regresa None si no existe.
-        """
-        return self.documents.get(doc_id)
+# ---------------------------------------------------------
+# CLASE 2: Tabla Hash (Chain Hashing)
+# ---------------------------------------------------------
+class HashTable:
+    """Tabla hash con chaining para almacenar documentos."""
 
-    def record_interaction(self, user_id: str, doc_id: str) -> None:
-        """
-        Registra una interacción de un usuario con un documento para
-        personalizar futuras búsquedas y sugerencias.
-        """
-        if doc_id not in self.documents:
-            return
+    def __init__(self, size=2003):
+        self.size = size
+        self.buckets = [[] for _ in range(self.size)]
 
-        self.user_history[user_id][doc_id] += 1
-        self.documents[doc_id]["lastAccessed"] = datetime.utcnow().isoformat()
+    def _hash_function(self, key):
+        return hash(key) % self.size
 
-    def search(self, keywords: List[str], user_id: Optional[str] = None, limit: int = 10) -> List[Dict]:
-        """
-        Busca documentos que contengan las palabras clave y los ordena por
-        relevancia simple y afinidad con el usuario.
-        """
-        tokens = [kw.lower() for kw in keywords]
-        candidate_ids = set()
+    def insert(self, key, document):
+        index = self._hash_function(key)
+        bucket = self.buckets[index]
+        for i, (k, doc) in enumerate(bucket):
+            if k == key:
+                bucket[i] = (key, document)
+                return
+        bucket.append((key, document))
 
-        for token in tokens:
-            candidate_ids.update(self.inverted_index.get(token, set()))
+    def get(self, key):
+        index = self._hash_function(key)
+        bucket = self.buckets[index]
+        for k, doc in bucket:
+            if k == key:
+                return doc
+        return None
 
-        scored_results = []
-        user_scores = self.user_history.get(user_id, {}) if user_id else {}
+    def get_all_documents(self):
+        docs = []
+        for bucket in self.buckets:
+            for _, doc in bucket:
+                docs.append(doc)
+        return docs
 
-        for doc_id in candidate_ids:
-            doc = self.documents[doc_id]
-            text = " ".join(
-                [doc.get("title", ""), doc.get("content", ""), " ".join(doc.get("tags", []))]
-            ).lower()
 
-            text_score = sum(text.count(tok) for tok in tokens)
-            personalization_bonus = user_scores.get(doc_id, 0)
-            scored_results.append((text_score + personalization_bonus, doc))
+# ---------------------------------------------------------
+# CLASE 3: Índice Invertido
+# ---------------------------------------------------------
+class InvertedIndex:
+    """Mapea palabra -> lista de documentos que la contienen."""
 
-        scored_results.sort(key=lambda item: item[0], reverse=True)
-        return [doc for _, doc in scored_results[:limit]]
+    def __init__(self):
+        self.index = defaultdict(list)
+        self.doc_store = {}
 
-    def suggest(self, user_id: str, query: Optional[List[str]] = None, sample_size: int = 5) -> List[Dict]:
-        """
-        Sugiere documentos usando aleatoriedad controlada, ponderando la
-        relevancia de la consulta y el historial del usuario.
-        """
-        if query:
-            candidates = self.search(query, user_id=user_id, limit=len(self.documents))
+    def _tokenize(self, text):
+        words = text.lower().split()
+        cleaned = []
+        for w in words:
+            clean = w.strip('.,!?;:"()[]{}')
+            if clean:
+                cleaned.append(clean)
+        return cleaned
+
+    def add_document(self, document: Document):
+        doc_id = document.doc_id
+        self.doc_store[doc_id] = document
+
+        for word in self._tokenize(document.title):
+            if doc_id not in self.index[word]:
+                self.index[word].append(doc_id)
+
+        for word in self._tokenize(document.content):
+            if doc_id not in self.index[word]:
+                self.index[word].append(doc_id)
+
+        for tag in document.tags:
+            for word in self._tokenize(tag):
+                if doc_id not in self.index[word]:
+                    self.index[word].append(doc_id)
+
+    def search(self, keyword):
+        keyword = keyword.lower()
+        return self.index.get(keyword, [])
+
+    def get_document(self, doc_id):
+        return self.doc_store.get(doc_id)
+
+    def get_all_documents(self):
+        return list(self.doc_store.values())
+
+
+# ---------------------------------------------------------
+# CLASE 4: Sistema de Gestión
+# ---------------------------------------------------------
+class DocumentSystem:
+    """Gestiona generación, almacenamiento, búsqueda y recomendaciones."""
+
+    def __init__(self):
+        self.storage = HashTable(size=2003)
+        self.inverted_index = InvertedIndex()
+        self.user_search_history = []
+        self.user_interactions = {}
+
+    def generate_dummy_data(self, num_records=2000):
+        """Genera documentos de prueba según el template básico."""
+        print(f"Generando {num_records} documentos de prueba...")
+        lorem_words = [
+            "lorem", "ipsum", "dolor", "sit", "amet", "data", "big", "hash",
+            "code", "random", "search", "engine", "sorting", "retrieval",
+            "system", "algorithm", "python", "document", "information"
+        ]
+        for _ in range(num_records):
+            doc_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=24))
+            title = " ".join(random.choices(lorem_words, k=5)).capitalize()
+            content = " ".join(random.choices(lorem_words, k=20)).capitalize()
+            tags = random.sample(lorem_words, k=3)
+            doc = Document(doc_id, title, content, tags)
+            self.storage.insert(doc_id, doc)
+            self.inverted_index.add_document(doc)
+        print("Datos generados, tabla hash e índice invertido listos.")
+
+    def _calculate_relevance_score(self, doc: Document, keyword: str):
+        """Score por coincidencias en título/tags/contenido y popularidad."""
+        keyword = keyword.lower()
+        score = 0
+
+        for word in doc.title.lower().split():
+            if keyword in word:
+                score += 3
+        for tag in doc.tags:
+            if keyword in tag.lower():
+                score += 2
+        for word in doc.content.lower().split():
+            if keyword in word:
+                score += 1
+        score += doc.access_count * 0.5
+        return score
+
+    def _quicksort_by_relevance(self, docs_list):
+        if len(docs_list) <= 1:
+            return docs_list
+        pivot = random.choice(docs_list)
+        greater, equal, lesser = [], [], []
+        for doc in docs_list:
+            if doc.relevance_score > pivot.relevance_score:
+                greater.append(doc)
+            elif doc.relevance_score == pivot.relevance_score:
+                equal.append(doc)
+            else:
+                lesser.append(doc)
+        return self._quicksort_by_relevance(greater) + equal + self._quicksort_by_relevance(lesser)
+
+    def search_by_keyword(self, keyword, use_inverted_index=True):
+        """Búsqueda con índice invertido (rápido) o lineal (lento)."""
+        keyword = keyword.lower()
+        results = []
+
+        if use_inverted_index:
+            doc_ids = self.inverted_index.search(keyword)
+            for doc_id in doc_ids:
+                doc = self.inverted_index.get_document(doc_id)
+                if doc:
+                    score = self._calculate_relevance_score(doc, keyword)
+                    if score > 0:
+                        doc.relevance_score = score
+                        results.append(doc)
         else:
-            candidates = list(self.documents.values())
+            for doc in self.storage.get_all_documents():
+                score = self._calculate_relevance_score(doc, keyword)
+                if score > 0:
+                    doc.relevance_score = score
+                    results.append(doc)
 
-        if not candidates:
+        self.user_search_history.append(keyword)
+        return self._quicksort_by_relevance(results)
+
+    def retrieve_document(self, doc_id):
+        """Recupera por ID (O(1)) y actualiza acceso y fecha."""
+        doc = self.storage.get(doc_id)
+        if doc:
+            doc.access_count += 1
+            doc.last_accessed = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S +0000")
+            self.user_interactions[doc_id] = self.user_interactions.get(doc_id, 0) + 1
+        return doc
+
+    def randomized_recommendation(self, num_suggestions=3):
+        """Recomendaciones ponderadas por búsquedas recientes y popularidad."""
+        all_docs = self.inverted_index.get_all_documents()
+        if not all_docs:
             return []
 
-        user_scores = self.user_history.get(user_id, {})
-        weights = []
+        candidates = []
+        if self.user_search_history:
+            recent = self.user_search_history[-3:]
+            for doc in all_docs:
+                relevance = sum(self._calculate_relevance_score(doc, term) for term in recent)
+                if relevance > 0:
+                    doc.relevance_score = relevance
+                    candidates.append(doc)
 
-        for doc in candidates:
-            base_weight = 1.0 + 0.5 * user_scores.get(doc["_id"], 0)
-            weights.append(base_weight)
+        if len(candidates) < num_suggestions:
+            popular = sorted(all_docs, key=lambda x: x.access_count, reverse=True)
+            top_popular = popular[:max(10, len(popular) // 5)]
+            existing = {d.doc_id for d in candidates}
+            for doc in top_popular:
+                if doc.doc_id not in existing:
+                    candidates.append(doc)
 
-        suggestions = []
-        chosen_ids = set()
+        if len(candidates) < num_suggestions:
+            candidates = all_docs
 
-        # Evita sugerir documentos repetidos en la misma llamada.
-        while len(suggestions) < min(sample_size, len(candidates)):
-            doc = random.choices(candidates, weights=weights, k=1)[0]
-            if doc["_id"] in chosen_ids:
-                continue
-            suggestions.append(doc)
-            chosen_ids.add(doc["_id"])
+        k = min(num_suggestions, len(candidates))
+        return random.sample(candidates, k)
 
-        return suggestions
-
-    def _index_document(self, document: Dict) -> None:
-        """
-        Construye el índice invertido a partir del título, contenido y etiquetas.
-        """
-        tokens = self._tokenize(document.get("title", "")) | self._tokenize(document.get("content", ""))
-        tokens.update(tag.lower() for tag in document.get("tags", []))
-
-        for token in tokens:
-            self.inverted_index[token].add(document["_id"])
-
-    @staticmethod
-    def _tokenize(text: str) -> set:
-        """
-        Normaliza y separa un texto en tokens básicos.
-        """
+    def get_user_stats(self):
         return {
-            word.strip(".,;:!?()[]\"'").lower()
-            for word in text.split()
-            if word.strip(".,;:!?()[]\"'")
+            "total_searches": len(self.user_search_history),
+            "unique_keywords": len(set(self.user_search_history)),
+            "documents_accessed": len(self.user_interactions),
+            "most_accessed_docs": sorted(self.user_interactions.items(), key=lambda x: x[1], reverse=True)[:5],
         }
 
-    @staticmethod
-    def generate_documents(total: int = 2000) -> List[Dict]:
-        """
-        Genera documentos de muestra
-        """
-        documents = []
-        for _ in range(total):
-            documents.append(
-                {
-                    "_id": DocumentRecommender._generate_object_id(),
-                    "title": DocumentRecommender._generate_title(),
-                    "content": DocumentRecommender._generate_content(),
-                    "tags": DocumentRecommender._generate_tags(),
-                    "lastAccessed": DocumentRecommender._generate_last_accessed(),
-                }
-            )
-        return documents
+    def compare_search_methods(self, keyword):
+        """Compara índice invertido vs búsqueda lineal en tiempo y resultados."""
+        print("\n" + "=" * 60)
+        print(f"COMPARACIÓN DE MÉTODOS DE BÚSQUEDA: '{keyword}'")
+        print("=" * 60)
 
-    @staticmethod
-    def save_documents(documents: List[Dict], path: str) -> None:
-        """
-        Guarda los documentos en un archivo JSON.
-        """
-        with open(path, "w", encoding="utf-8") as file:
-            json.dump(documents, file, indent=2, ensure_ascii=False)
+        start = time.time()
+        results_inverted = self.search_by_keyword(keyword, use_inverted_index=True)
+        t_inv = time.time() - start
 
-    @staticmethod
-    def _generate_object_id() -> str:
-        """
-        Crea un identificador de 24 caracteres hexadecimales tipo ObjectId.
-        """
-        hex_chars = "0123456789abcdef"
-        return "".join(random.choice(hex_chars) for _ in range(24))
+        start = time.time()
+        results_linear = self.search_by_keyword(keyword, use_inverted_index=False)
+        t_lin = time.time() - start
 
-    @staticmethod
-    def _generate_title() -> str:
-        """
-        Crea un título aleatorio sin punto final.
-        """
-        words = DocumentRecommender._sample_words(random.randint(5, 10))
-        sentence = " ".join(words)
-        return sentence.capitalize()
-
-    @staticmethod
-    def _generate_content() -> str:
-        """
-        Crea un párrafo de contenido.
-        """
-        sentences = []
-        for _ in range(random.randint(5, 10)):
-            words = DocumentRecommender._sample_words(random.randint(8, 15))
-            sentence = " ".join(words).capitalize() + "."
-            sentences.append(sentence)
-        return " ".join(sentences)
-
-    @staticmethod
-    def _generate_tags() -> List[str]:
-        """
-        Crea tres etiquetas para el documento.
-        """
-        return [random.choice(DocumentRecommender._WORD_BANK) for _ in range(3)]
-
-    @staticmethod
-    def _generate_last_accessed() -> str:
-        """
-        Genera una marca de tiempo con fecha aleatoria del último año.
-        """
-        now = datetime.now()
-        random_days = random.randint(0, 365)
-        random_date = now - timedelta(days=random_days)
-        random_date = random_date.replace(
-            hour=random.randint(0, 23),
-            minute=random.randint(0, 59),
-            second=random.randint(0, 59),
-        )
-        return random_date.strftime("%Y-%m-%dT%H:%M:%S +0000")
-
-    @staticmethod
-    def _sample_words(quantity: int) -> List[str]:
-        """
-        Devuelve una lista de palabras aleatorias del banco base.
-        """
-        return [random.choice(DocumentRecommender._WORD_BANK) for _ in range(quantity)]
-
-    _WORD_BANK = [
-        "system",
-        "data",
-        "analysis",
-        "search",
-        "engine",
-        "hashing",
-        "index",
-        "retrieval",
-        "storage",
-        "cache",
-        "ranking",
-        "query",
-        "document",
-        "cluster",
-        "vector",
-        "token",
-        "user",
-        "session",
-        "history",
-        "learning",
-        "metric",
-        "relevance",
-        "probability",
-        "random",
-        "cloud",
-        "network",
-        "log",
-        "audit",
-        "trace",
-        "performance",
-        "scalable",
-        "distributed"
-    ]
+        print("\n1) ÍNDICE INVERTIDO")
+        print(f"   Tiempo: {t_inv*1000:.2f} ms | Resultados: {len(results_inverted)}")
+        print("\n2) BÚSQUEDA LINEAL")
+        print(f"   Tiempo: {t_lin*1000:.2f} ms | Resultados: {len(results_linear)}")
+        if t_inv > 0:
+            speedup = t_lin / t_inv if t_inv > 0 else float('inf')
+            print(f"\nMejora: {speedup:.1f}x más rápido con índice invertido")
+        return results_inverted
 
 
 if __name__ == "__main__":
-    # Generar y guardar documentos de muestra
-    documents = DocumentRecommender.generate_documents(total=2000)
-    DocumentRecommender.save_documents(documents, "data.json")
-    print(f"Archivo creado: data.json")
+    system = DocumentSystem()
+    system.generate_dummy_data(2000)
 
-    recommender = DocumentRecommender(documents)
+    all_docs = system.storage.get_all_documents()
+    sample_id = all_docs[0].doc_id
 
-    # Ejemplo básico de uso
-    sample_user = "usuario_demo"
-    query = ["system", "data"]
+    print("\n" + "=" * 60)
+    print(f"PRUEBA 1: Recuperación por Hash (ID: {sample_id[:12]}...)")
+    print("=" * 60)
+    retrieved = system.retrieve_document(sample_id)
+    print(f"Documento: {retrieved.title}")
+    print(f"Accesos: {retrieved.access_count}")
 
-    resultados = recommender.search(query, user_id=sample_user, limit=3)
-    print("Resultados de búsqueda:")
-    for doc in resultados:
-        print(f"- {doc['title']} (id: {doc['_id']})")
+    print("\n" + "=" * 60)
+    print("PRUEBA 2: Comparación de búsqueda con keyword 'data'")
+    print("=" * 60)
+    results = system.compare_search_methods("data")
+    print("\nTop 5 más relevantes:")
+    for i, doc in enumerate(results[:5], 1):
+        print(f"  {i}. [{doc.relevance_score:.1f} pts] {doc.title}")
 
-    if resultados:
-        # Registrar interacción con el primer resultado para personalizar futuras sugerencias.
-        recommender.record_interaction(sample_user, resultados[0]["_id"])
+    print("\n" + "=" * 60)
+    print("Simulando interacciones...")
+    print("=" * 60)
+    system.search_by_keyword("algorithm")
+    system.search_by_keyword("python")
+    if results:
+        system.retrieve_document(results[0].doc_id)
+        system.retrieve_document(results[0].doc_id)
 
-    sugerencias = recommender.suggest(sample_user, query=query, sample_size=3)
-    print("\nSugerencias personalizadas:")
-    for doc in sugerencias:
-        print(f"- {doc['title']} (id: {doc['_id']})")
+    print("\n" + "=" * 60)
+    print("PRUEBA 3: Recomendaciones")
+    print("=" * 60)
+    suggestions = system.randomized_recommendation(5)
+    print(f"Historial: {system.user_search_history}")
+    for i, doc in enumerate(suggestions, 1):
+        print(f"  {i}. {doc.title} | Accesos: {doc.access_count} | Tags: {', '.join(doc.tags)}")
+
+    print("\n" + "=" * 60)
+    print("PRUEBA 4: Estadísticas de uso")
+    print("=" * 60)
+    stats = system.get_user_stats()
+    print(f"Total de búsquedas: {stats['total_searches']}")
+    print(f"Palabras clave únicas: {stats['unique_keywords']}")
+    print(f"Documentos accedidos: {stats['documents_accessed']}")
+    if stats["most_accessed_docs"]:
+        print("Más accedidos:")
+        for doc_id, count in stats["most_accessed_docs"]:
+            doc = system.storage.get(doc_id)
+            if doc:
+                print(f"  - {doc.title[:40]}... ({count} accesos)")
+
+    print("\n" + "=" * 60)
+    print("Sistema funcionando correctamente")
+    print("=" * 60)
