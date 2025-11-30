@@ -71,4 +71,3 @@ Implementamos cinco unidades, cada una enfocada en un tema central de la materia
 ## Notas
 - El archivo de datos generado (`data.json`) está listado en `.gitignore` para evitar subirlo al repo.
 - Mantén activado el entorno virtual cuando ejecutes los scripts. Si cierras la terminal, vuelve a activarlo antes de correrlos. 
-- Roles sugeridos para la exposición: cada integrante puede cubrir una o dos unidades; incluyan breve demo y conexión teoría→código. 
