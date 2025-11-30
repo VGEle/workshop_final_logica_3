@@ -41,11 +41,11 @@ class SistemaProcesamiento:
 
         # ---------------------------------------------------------
         # 5. DGIM ALGORITHM
-        # Teoría: Ventana deslizante, cubetas potencias de 2.
+        # Teoría: Ventana deslizante, bukets potencias de 2.
         # ---------------------------------------------------------
         self.current_timestamp = 0
         self.window_size = 32
-        # Lista de cubetas. Cada cubeta es: [tamaño, tiempo_final]
+        # Lista de bukets. Cada buket es: [tamaño, tiempo_final]
         self.dgim_buckets = []
         # Ruta preferida para usuarios muestreados
         self.routing_choice = {}
@@ -156,11 +156,11 @@ class SistemaProcesamiento:
     # ==============================================================================
     def procesar_dgim(self, bit):
         """
-        Recibe un bit (1 o 0). Si es 1, crea una cubeta y fusiona si es necesario.
+        Recibe un bit (1 o 0). Si es 1, crea un buket y fusiona si es necesario.
         """
         self.current_timestamp += 1
         
-        # Paso A: Eliminar cubetas viejas (fuera de la ventana)
+        # Paso A: Eliminar bukets viejos (fuera de la ventana)
         # Si el tiempo actual es 100 y ventana es 20, borramos todo lo anterior a 80
         while len(self.dgim_buckets) > 0:
             ultimo_bucket = self.dgim_buckets[-1] # El más viejo está al final
@@ -173,23 +173,23 @@ class SistemaProcesamiento:
         if bit == 0:
             return
 
-        # Paso C: Si bit es 1, crear nueva cubeta de tamaño 1
+        # Paso C: Si bit es 1, crear nuevo buket de tamaño 1
         # Insertamos al inicio (índice 0 es lo más reciente)
         new_bucket = [1, self.current_timestamp] 
         self.dgim_buckets.insert(0, new_bucket)
 
         # Paso D: Fusión (Merge) - La parte clave de la teoría
-        # "Si hay 3 cubetas del mismo tamaño, fusionar las 2 más viejas"
+        # "Si hay 3 bukets del mismo tamaño, fusionar los 2 más viejos"
         idx = 0
         while idx < len(self.dgim_buckets) - 2:
-            # Revisamos 3 cubetas consecutivas: actual, siguiente, subsiguiente
+            # Revisamos 3 bukets consecutivos: actual, siguiente, subsiguiente
             b1 = self.dgim_buckets[idx]
             b2 = self.dgim_buckets[idx+1]
             b3 = self.dgim_buckets[idx+2]
 
             if b1[0] == b2[0] and b2[0] == b3[0]:
                 # ¡Tenemos tres del mismo tamaño!
-                # Fusionamos b2 y b3 (las más viejas de ese tamaño)
+                # Fusionamos b2 y b3 (los más viejos de ese tamaño)
                 # Nuevo tamaño = b2.size + b3.size (ej. 1+1=2, 2+2=4)
                 # Nos quedamos con el timestamp del más reciente de los dos fusionados (b2)
                 merged_bucket = [b2[0] + b3[0], b2[1]]
