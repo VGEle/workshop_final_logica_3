@@ -130,10 +130,22 @@ class DocumentSystem:
         """Genera documentos de prueba según el template básico."""
         print(f"Generando {num_records} documentos de prueba...")
         lorem_words = [
-            "lorem", "ipsum", "dolor", "sit", "amet", "data", "big", "hash",
-            "code", "random", "search", "engine", "sorting", "retrieval",
-            "system", "algorithm", "python", "document", "information"
+            'python', 'automatizado', 'java', 'lenguaje', 'programación', 'sistema', 'redes', 'seguridad', 
+            'datos', 'análisis', 'desarrollo', 'aplicación', 'web', 'móvil', 'base', 'algoritmo', 'inteligencia', 
+            'artificial', 'aprendizaje', 'máquina', 'nube', 'computación', 'software', 'hardware', 'infraestructura', 
+            'tecnología', 'digital', 'información', 'procesamiento', 'visualización', 'automatización', 'robótica', 
+            'sistema operativo', 'servidor', 'cliente', 'protocolo', 'criptografía', 'blockchain', 'iot', 
+            'internet de las cosas', 'big data', 'análisis predictivo', 'minería de datos', 'redes neuronales', 
+            'deep learning', 'framework', 'biblioteca', 'API', 'interfaz', 'usuario', 'experiencia', 'diseño', 
+            'despliegue', 'contenerización', 'docker', 'kubernetes', 'virtualización', 'monitorización', 'rendimiento', 
+            'optimización', 'seguridad informática', 'ciberseguridad', 'ataque', 'defensa', 'firewall', 'antivirus', 
+            'malware', 'phishing', 'ingeniería social', 'criptomonedas', 'fintech', 'smart contracts', 'tokenización', 
+            'economía digital', 'transformación digital', 'innovación', 'emprendimiento', 'startup', 'agilidad', 
+            'scrum', 'kanban', 'devops', 'QA', 'control de calidad', 'documentación', 'versionado', 'git', 
+            'github', 'gitlab', 'bitbucket', 'gestión de proyectos', 'planificación', 'análisis de requisitos', 
+            'diseño de software', 'arquitectura de software', 'patrones de diseño'
         ]
+        
         for _ in range(num_records):
             doc_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=24))
             title = " ".join(random.choices(lorem_words, k=5)).capitalize()
