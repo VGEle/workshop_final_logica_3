@@ -7,8 +7,7 @@ import json
 import random
 from collections import defaultdict
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Dict, Iterable, List, Optional
 
 
 class DocumentRecommender:
@@ -223,7 +222,36 @@ class DocumentRecommender:
     _WORD_BANK = [
         "system",
         "data",
-        "analysis"
+        "analysis",
+        "search",
+        "engine",
+        "hashing",
+        "index",
+        "retrieval",
+        "storage",
+        "cache",
+        "ranking",
+        "query",
+        "document",
+        "cluster",
+        "vector",
+        "token",
+        "user",
+        "session",
+        "history",
+        "learning",
+        "metric",
+        "relevance",
+        "probability",
+        "random",
+        "cloud",
+        "network",
+        "log",
+        "audit",
+        "trace",
+        "performance",
+        "scalable",
+        "distributed"
     ]
 
 

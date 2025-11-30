@@ -1,44 +1,70 @@
+import json
 import random
 import time
 from collections import defaultdict
+from pathlib import Path
 import multiprocessing  # Librería para paralelismo real
 
 # ==========================================
-# PARTE 0: GENERADOR DE DATOS (MOCK DATA)
+# PARTE 0: GENERADOR DE DATOS (MÁS CAMPOS)
 # ==========================================
-def generar_datos_simulados():
-    print("--- Generando 1,000 registros simulados... ---")
-    
-    usuarios = []
-    departamentos = ["IT", "HR", "Sales", "Finance", "Legal"]
-    for i in range(1, 51):
-        usuarios.append({
-            "user_id": f"user_{i:03d}",
-            "name": f"Empleado {i}",
-            "department": random.choice(departamentos)
-        })
+def cargar_o_generar_documentos(count=1000):
+    """
+    Carga documentos de la unidad 3 si existen (y conserva sus campos),
+    o genera un conjunto simple. En ambos casos agrega los campos de
+    MapReduce para la unidad 4. Mantiene hasta 'count' registros.
+    """
+    base_path = Path("w3/document_data_v2.json")
+    if base_path.exists():
+        with base_path.open() as f:
+            documentos = json.load(f)[:count]
+    else:
+        documentos = []
+        departamentos = ["IT", "HR", "Sales", "Finance", "Legal"]
+        tipos = ["report", "memo", "presentation", "email", "contract", "invoice"]
+        for i in range(count):
+            doc_type = random.choice(tipos)
+            dept = random.choice(departamentos)
+            documentos.append(
+                {
+                    "_id": f"doc_{i:04d}",
+                    "title": f"Título {i}",
+                    "content": "Contenido simulado",
+                    "documentType": doc_type,
+                    "department": dept,
+                    "fileSizeMB": random.uniform(0.5, 50.0),
+                }
+            )
 
-    documentos = []
-    tipos = ["PDF", "Word", "Excel", "PowerPoint"]
-    
-    for i in range(1, 1001):
-        doc_type = random.choice(tipos)
-        dept = random.choice(departamentos)
-        
-        doc = {
-            "document_id": f"doc_{i:04d}",
-            "document_type": doc_type,
-            "department": dept,
-            "file_size_mb": random.uniform(0.5, 50.0),
-            "author_id": f"user_{random.randint(1, 50):03d}",
-            "mapReducePartition": random.randint(1, 25),
-            "processingNode": f"node_{random.randint(1, 12)}",
-            "batchId": f"batch_{random.randint(1000, 9999)}",
-            "aggregationKey": f"{doc_type}_{dept}"
-        }
-        documentos.append(doc)
-        
-    return documentos, usuarios
+    departamentos = ["IT", "HR", "Sales", "Finance", "Legal"]
+    enriched = []
+    for idx, doc in enumerate(documentos):
+        # Asegurar campos clave para MapReduce
+        doc_type = doc.get("documentType") or doc.get("document_type") or "unknown"
+        dept = doc.get("department") or random.choice(departamentos)
+        doc["documentType"] = doc_type
+        doc["department"] = dept
+        doc["fileSizeMB"] = doc.get("fileSizeMB", random.uniform(0.5, 50.0))
+        doc["authorId"] = doc.get("authorId") or f"user_{random.randint(1, 50):03d}"
+        doc["mapReducePartition"] = random.randint(1, 25)
+        doc["processingNode"] = f"node_{random.randint(1, 12)}"
+        doc["batchId"] = f"batch_{random.randint(1000, 9999)}"
+        doc["aggregationKey"] = f"{doc_type}_{dept}"
+        # Garantizar un id simple para el join aunque el original exista
+        doc["document_id"] = doc.get("document_id") or doc.get("_id") or f"doc_{idx:04d}"
+        enriched.append(doc)
+
+    usuarios = []
+    for i in range(1, 51):
+        usuarios.append(
+            {
+                "user_id": f"user_{i:03d}",
+                "name": f"Empleado {i}",
+                "department": random.choice(departamentos),
+            }
+        )
+
+    return enriched, usuarios
 
 # ==========================================
 # EL MOTOR MAP-REDUCE (VERSIÓN PARALELA REAL)
@@ -96,14 +122,14 @@ def map_1_contador(documento):
     # Simulamos un pequeño retraso para que se note la diferencia de velocidad
     # en el paralelismo (sino es demasiado rápido)
     time.sleep(0.001) 
-    return (documento['document_type'], 1)
+    return (documento['documentType'], 1)
 
 def reduce_1_contador(clave, lista_de_unos):
     return sum(lista_de_unos)
 
 # --- ALGORITMO 2: PROMEDIO ---
 def map_2_promedio(documento):
-    return (documento['department'], documento['file_size_mb'])
+    return (documento['department'], documento['fileSizeMB'])
 
 def reduce_2_promedio(clave, lista_tamanos):
     if not lista_tamanos: return 0
@@ -119,7 +145,10 @@ def algoritmo_3_join_setup(documentos, usuarios):
 def map_join(registro_bruto):
     tipo_origen, data = registro_bruto
     if tipo_origen == 'DATA':
-        return (data['author_id'], ('DOC', data['document_id'], data['document_type']))
+        doc_id = data.get('document_id') or data.get('_id')
+        doc_type = data.get('documentType') or data.get('document_type')
+        author = data.get('authorId') or data.get('author_id')
+        return (author, ('DOC', doc_id, doc_type))
     elif tipo_origen == 'USER':
         return (data['user_id'], ('USER_INFO', data['name']))
 
@@ -136,14 +165,23 @@ def reduce_join(user_id, lista_valores):
 # ==========================================
 def algoritmo_4_costos(documentos):
     print("\n--- Algoritmo 4: Costos ---")
-    total_gb = sum(d['file_size_mb'] for d in documentos) / 1024
+    total_gb = sum(d['fileSizeMB'] for d in documentos) / 1024
     print(f"Total Almacenado: {total_gb:.2f} GB | Costo Est. Petabyte: ${1_000_000 * 0.023:,.2f}")
 
-def algoritmo_5_performance():
-    print("\n--- Algoritmo 5: Análisis de Performance (Simulado) ---")
-    print("Nodos | Speedup Teórico")
-    for n in [1, 2, 4, 8]:
-        print(f"{n:<5} | {n:<5}x (Ideal)")
+def algoritmo_5_performance(docs_full):
+    """
+    Mide tiempo simple del conteo en subconjunto vs total para ilustrar impacto de tamaño.
+    """
+    print("\n--- Algoritmo 5: Análisis de Performance (Conteo paralelo) ---")
+    subsets = {
+        "pequeño (200 docs)": docs_full[:200],
+        "completo": docs_full,
+    }
+    for etiqueta, docs in subsets.items():
+        inicio = time.time()
+        motor_map_reduce_paralelo(docs, map_1_contador, reduce_1_contador)
+        fin = time.time()
+        print(f"   Tiempo en {etiqueta}: {fin - inicio:.4f} s")
 
 # ==========================================
 # MAIN
@@ -151,7 +189,7 @@ def algoritmo_5_performance():
 if __name__ == "__main__":
     # IMPORTANTE: En Windows, multiprocessing necesita estar protegido por este if
     
-    docs, users = generar_datos_simulados()
+    docs, users = cargar_o_generar_documentos(count=1000)
     
     print("\n" + "="*50)
     print("INICIANDO DEMOSTRACIÓN DE PARALELISMO REAL")
@@ -171,6 +209,6 @@ if __name__ == "__main__":
     print(f"   {list(res3.values())[0]}")
 
     algoritmo_4_costos(docs)
-    algoritmo_5_performance()
+    algoritmo_5_performance(docs)
     
     print("\nDemostración completada usando MÚLTIPLES NÚCLEOS.")
