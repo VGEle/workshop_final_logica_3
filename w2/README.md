@@ -28,6 +28,3 @@ python3 w2/main.py
 ## Orden de ejecución (stream)
 - Secuencia por evento (bucle en línea ~220): Bloom → Sampling → Conteo exacto → F1 → DGIM. Se repite 10 veces.
 
-## Sugerencias para la exposición
-- Qué ver en consola: detección de recencia en Bloom, aceptación/rechazo en sampling, F1 acumulado, buckets de DGIM, resumen final de muestra/rutas.
-- Simplificaciones: firma por tipo+frecuencia (no hash de contenido completo), bit=1 para cada evento en DGIM, ventana fija de 32, 10 eventos de demo (ajustable).

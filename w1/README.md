@@ -42,7 +42,3 @@ python3 w1/main.py
 ## Notas rápidas
 - `lastAccessed` formateado como `YYYY-MM-ddThh:mm:ss +0000`.
 - Índice invertido usa título, contenido y tags en minúsculas.
-
-## Sugerencias para la exposición
-- Muestra breve de salida: generación de docs, recuperación por ID, comparación índice vs lineal, top 5 resultados, recomendaciones y estadísticas.
-- Simplificaciones: relevancia por pesos fijos y popularidad; recomendaciones con muestreo simple; sin persistencia de búsquedas más allá de la sesión.

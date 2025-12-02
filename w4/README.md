@@ -27,7 +27,3 @@ python3 w4/main.py
 ## Orden de ejecución (main)
 - Archivo: `w4/main.py`, bloque principal en línea 189.
 - Secuencia: carga/genera docs → Algoritmo 1 (conteo) → Algoritmo 3 (join) → Algoritmo 4 (costos) → Algoritmo 5 (performance en subset y completo). Algoritmo 2 está definido pero no se llama en el flujo; puedes invocarlo si lo necesitas.
-
-## Sugerencias para la exposición
-- Qué ver en consola: conteo por tipo, promedios por departamento (si se invoca), ejemplo de reporte join, cálculo de costos, tiempos en subset vs completo.
-- Simplificaciones: datos simulados o cargados desde U3, speedup/performance ilustrativo (no benchmark exhaustivo), paralelismo en fase MAP con multiprocessing.

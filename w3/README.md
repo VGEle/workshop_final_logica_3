@@ -37,6 +37,4 @@ python3 w3/main.py
 - Archivo: `w3/main.py`, bloque principal en línea 295.
 - Secuencia: instancia generador → define `NUM_DOCS` (=2000) → genera dataset (`generate_dataset`) → guarda JSON → imprime muestra del primer documento → ejecuta prueba 2-SAT.
 
-## Sugerencias para la exposición
-- Qué ver en consola: generación y muestra de un documento con todas las métricas, demo de 2-SAT con cláusulas de ejemplo.
-- Simplificaciones: clasificación de estados no exhaustiva, heurística de cuello de botella, matrices y rutas generadas al azar; ajustar `NUM_DOCS` si se desea menos salida.
+
